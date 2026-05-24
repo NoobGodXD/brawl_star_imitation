@@ -5,8 +5,10 @@ public class CharacterData : ScriptableObject
 {
     [Header("基本資料")]
     public string characterName;
-    public GameObject modelPrefab; 
-    public RuntimeAnimatorController animatorController; 
+    public GameObject modelPrefab;
+    public RuntimeAnimatorController animatorController;
+    // 請確保您的 CharacterData 類別中有宣告這行：
+    public Sprite characterPortrait; // 用於開場 3v3 展示卡的英雄頭像圖片 
 
     [Header("生命值")]
     public int maxHealth;

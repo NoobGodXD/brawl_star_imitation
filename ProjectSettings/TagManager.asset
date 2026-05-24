@@ -8,6 +8,10 @@ TagManager:
   - Bullet
   - Wall
   - Obstacle
+  - BlueTeam
+  - RedTeam
+  - SpawnPoint
+  - SafeZone
   layers:
   - Default
   - TransparentFX
@@ -17,11 +21,11 @@ TagManager:
   - UI
   - player
   - bullet
-  - 
-  - 
-  - 
-  - 
-  - 
+  - BlueTeamPlayer
+  - RedTeamPlayer
+  - BlueTeamBullet
+  - RedTeamBullet
+  - Obstacle
   - 
   - 
   - 

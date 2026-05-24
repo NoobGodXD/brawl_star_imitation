@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+
+<svg
+   width="210mm"
+   height="297mm"
+   viewBox="0 0 210 297"
+   version="1.1"
+   id="svg1"
+   inkscape:version="1.4.4 (dcaf3e7, 2026-05-05)"
+   sodipodi:docname="Dot_Blue.svg"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <sodipodi:namedview
+     id="namedview1"
+     pagecolor="#ffffff"
+     bordercolor="#000000"
+     borderopacity="0.25"
+     inkscape:showpageshadow="2"
+     inkscape:pageopacity="0.0"
+     inkscape:pagecheckerboard="0"
+     inkscape:deskcolor="#d1d1d1"
+     inkscape:document-units="mm"
+     inkscape:zoom="1.14661"
+     inkscape:cx="534.18338"
+     inkscape:cy="433.88772"
+     inkscape:window-width="2560"
+     inkscape:window-height="1302"
+     inkscape:window-x="0"
+     inkscape:window-y="25"
+     inkscape:window-maximized="0"
+     inkscape:current-layer="layer1" />
+  <defs
+     id="defs1" />
+  <g
+     inkscape:label="圖層 1"
+     inkscape:groupmode="layer"
+     id="layer1">
+    <path
+       id="path1"
+       style="fill:#00beff;stroke:#000000;stroke-width:4;fill-opacity:1"
+       d="M 95.312528 83.637272 C 91.708843 83.637272 88.807499 86.5381 88.807499 90.141785 L 88.807499 101.19434 A 50 50 0 0 0 57.694153 132.30872 C 57.654999 132.30803 57.615654 132.30769 57.576331 132.30769 L 46.508789 132.30769 C 42.905104 132.30769 40.004277 135.20851 40.004277 138.8122 L 40.004277 158.18776 C 40.004277 161.79145 42.905104 164.69227 46.508789 164.69227 L 57.576331 164.69227 C 57.615655 164.69227 57.654998 164.69193 57.694153 164.69124 A 50 50 0 0 0 88.807499 195.80562 L 88.807499 206.85817 C 88.807499 210.46186 91.708843 213.36269 95.312528 213.36269 L 114.68757 213.36269 C 118.29125 213.36269 121.1926 210.46186 121.1926 206.85817 L 121.1926 195.80562 A 50 50 0 0 0 152.30543 164.69227 L 163.22518 164.69227 C 166.82886 164.69227 169.72969 161.79145 169.72969 158.18776 L 169.72969 138.8122 C 169.72969 135.20851 166.82886 132.30769 163.22518 132.30769 L 152.30543 132.30769 A 50 50 0 0 0 121.1926 101.19434 L 121.1926 90.141785 C 121.1926 86.5381 118.29125 83.637272 114.68757 83.637272 L 95.312528 83.637272 z " />
+    <path
+       id="path2"
+       style="fill:none;stroke:#000000;stroke-width:6"
+       d="m 130,148.5 a 25,25 0 0 1 -25,25 25,25 0 0 1 -25,-25 25,25 0 0 1 25,-25 25,25 0 0 1 25,25 z" />
+  </g>
+</svg>
