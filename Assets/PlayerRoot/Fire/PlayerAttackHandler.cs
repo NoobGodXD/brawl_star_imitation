@@ -60,7 +60,7 @@ public class PlayerAttackHandler : MonoBehaviour
     {
         mainCam = Camera.main;
 
-        // 🌟 修正：一開始初始化時子彈為 0
+        // 一開始初始化時子彈為 0
         currentAmmo = 0;
 
         if (whiteFlashOverlay != null) whiteFlashOverlay.canvasRenderer.SetAlpha(0f);
@@ -69,13 +69,14 @@ public class PlayerAttackHandler : MonoBehaviour
         UpdateChargeUI();
     }
 
-    // 🌟 新增：供回合重置時調用，將子彈歸零，重新累積
+    // 供回合重置時調用，將子彈歸零，重新累積
     public void ResetAmmo()
     {
         currentAmmo = 0;
         reloadTimer = 0f;
         UpdateAmmoUI();
     }
+
     public void SetupWeaponModules(CharacterData data)
     {
         if (data == null) return;
@@ -128,7 +129,7 @@ public class PlayerAttackHandler : MonoBehaviour
 
     void Update()
     {
-        // 🌟 核心防線：如果不是 Playing 狀態，關閉普通與大招瞄準線，並不處理任何戰鬥操作
+        // 核心防線：如果不是 Playing 狀態，關閉普通與大招瞄準線，並不處理任何戰鬥操作
         if (KnockoutGameManager.Instance != null &&
             KnockoutGameManager.Instance.CurrentState != KnockoutGameManager.MatchState.Playing)
         {
@@ -137,10 +138,12 @@ public class PlayerAttackHandler : MonoBehaviour
             return;
         }
 
-        AimAtMouse();
+        // 1. 取得當前滑鼠指向方向（角色本體不進行旋轉）
+        Vector3 mouseDirection = GetMouseDirection();
+
         HandleReloading();
         HandleGadgetInput();
-        HandleAttackInput();
+        HandleAttackInput(mouseDirection);
     }
 
     public void AddUltCharge(float amount)
@@ -186,7 +189,7 @@ public class PlayerAttackHandler : MonoBehaviour
         ultMainIcon.sprite = isCurrentlyReady ? ultReadyIcon : normalIcon;
     }
 
-    private void HandleAttackInput()
+    private void HandleAttackInput(Vector3 mouseDirection)
     {
         if (normalWeapon == null) return;
 
@@ -203,7 +206,15 @@ public class PlayerAttackHandler : MonoBehaviour
             if (ultAimIndicator != null)
             {
                 ultAimIndicator.gameObject.SetActive(true);
-                ultAimIndicator.UpdateAiming(firePoint.position, transform.forward, ultWeapon.attackRange, ultWeapon.spreadAngle, currentColor);
+
+                // ⭐ 關鍵修復：我們只針對「大招瞄準框」物件進行旋轉，而不動到 transform 本身
+                if (mouseDirection.sqrMagnitude > 0.01f)
+                {
+                    ultAimIndicator.transform.rotation = Quaternion.LookRotation(mouseDirection);
+                }
+                
+                // 更新網格圖形時，將 transform.forward 改為傳入 mouseDirection
+                ultAimIndicator.UpdateAiming(firePoint.position, mouseDirection, ultWeapon.attackRange, ultWeapon.spreadAngle, currentColor);
             }
         }
         else
@@ -212,7 +223,15 @@ public class PlayerAttackHandler : MonoBehaviour
             if (normalAimIndicator != null)
             {
                 normalAimIndicator.gameObject.SetActive(true);
-                normalAimIndicator.UpdateAiming(firePoint.position, transform.forward, normalWeapon.attackRange, normalWeapon.spreadAngle, currentColor);
+
+                // ⭐ 關鍵修復：我們只針對「普攻瞄準框」物件進行旋轉，而不動到 transform 本身
+                if (mouseDirection.sqrMagnitude > 0.01f)
+                {
+                    normalAimIndicator.transform.rotation = Quaternion.LookRotation(mouseDirection);
+                }
+
+                // 更新網格圖形時，將 transform.forward 改為傳入 mouseDirection
+                normalAimIndicator.UpdateAiming(firePoint.position, mouseDirection, normalWeapon.attackRange, normalWeapon.spreadAngle, currentColor);
             }
         }
 
@@ -224,7 +243,8 @@ public class PlayerAttackHandler : MonoBehaviour
                 {
                     if (ultWeaponFire != null)
                     {
-                        ultWeaponFire.Fire(this, firePoint.position, transform.forward, ultWeapon, false);
+                        // 發射方向由 transform.forward 改為 mouseDirection
+                        ultWeaponFire.Fire(this, firePoint.position, mouseDirection, ultWeapon, false);
                         currentCharge = 0f;
                         UpdateChargeUI();
                     }
@@ -235,16 +255,21 @@ public class PlayerAttackHandler : MonoBehaviour
                 if (currentAmmo > 0)
                 {
                     currentAmmo--;
-                    if (normalWeaponFire != null) normalWeaponFire.Fire(this, firePoint.position, transform.forward, normalWeapon, hasGadgetBuff);
+                    if (normalWeaponFire != null) 
+                    {
+                        // 發射方向由 transform.forward 改為 mouseDirection
+                        normalWeaponFire.Fire(this, firePoint.position, mouseDirection, normalWeapon, hasGadgetBuff);
+                    }
                     if (hasGadgetBuff) { hasGadgetBuff = false; gadgetCooldownTimer = gadgetCooldown; }
                 }
             }
         }
     }
 
-    private void AimAtMouse()
+    // 🌟 新增：取得滑鼠指向的方向向量（取代原本直接旋轉本體 transform 的 AimAtMouse）
+    private Vector3 GetMouseDirection()
     {
-        if (mainCam == null) return;
+        if (mainCam == null) return transform.forward;
         Ray ray = mainCam.ScreenPointToRay(Input.mousePosition);
         Plane groundPlane = new Plane(Vector3.up, new Vector3(0, transform.position.y, 0));
 
@@ -253,8 +278,12 @@ public class PlayerAttackHandler : MonoBehaviour
             Vector3 hitPoint = ray.GetPoint(enterDistance);
             Vector3 lookDir = hitPoint - transform.position;
             lookDir.y = 0;
-            if (lookDir != Vector3.zero) transform.rotation = Quaternion.LookRotation(lookDir);
+            if (lookDir.sqrMagnitude > 0.01f)
+            {
+                return lookDir.normalized;
+            }
         }
+        return transform.forward;
     }
 
     private void HandleReloading()

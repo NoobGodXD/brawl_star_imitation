@@ -21,4 +21,7 @@ public class CharacterData : ScriptableObject
     public Sprite gadgetIcon;          // 武裝配件圖示
     public Sprite ultNormalIcon;       // 🎯 大招未滿時的專屬圖示
     public Sprite ultReadyIcon;        // 🎯 大招滿能發光的專屬圖示
+    
+    [Header("模型旋轉偏移")]
+    public Vector3 modelRotationOffset = Vector3.zero;
 }
