@@ -11,7 +11,7 @@ GameObject:
   - component: {fileID: 7079563612058565267}
   - component: {fileID: 4627481111045401531}
   - component: {fileID: 8239052974070558183}
-  - component: {fileID: 7868182366912781446}
+  - component: {fileID: -8463800223142174593}
   m_Layer: 10
   m_Name: Bullet_coin
   m_TagString: Bullet
@@ -83,7 +83,7 @@ SphereCollider:
   serializedVersion: 3
   m_Radius: 0.2
   m_Center: {x: 0, y: 0, z: 0}
---- !u!114 &7868182366912781446
+--- !u!114 &-8463800223142174593
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -92,7 +92,7 @@ MonoBehaviour:
   m_GameObject: {fileID: 3492830686884544556}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: feeca37718d0d4b738ae704e0e996962, type: 3}
+  m_Script: {fileID: 11500000, guid: 43bbf59c35a4d416ba7e129cb25b75d0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Bullet
 --- !u!1001 &3496982901240837102
