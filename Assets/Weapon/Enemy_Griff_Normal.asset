@@ -1,0 +1,25 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5dbbcbfc9b1324a458cf28abbe5cbee3, type: 3}
+  m_Name: Enemy_Griff_Normal
+  m_EditorClassIdentifier: Assembly-CSharp::WeaponData
+  baseDamage: 500
+  reloadTime: 1.5
+  attackRange: 3
+  bulletSpeed: 10
+  spreadAngle: 30
+  bulletCount: 0
+  timeBetweenShots: 0
+  bulletPrefab: {fileID: 3492830686884544556, guid: c1ba2bf2a6dcc41b68ac009fddcf1c01, type: 3}
+  aimIndicatorPrefab: {fileID: 2702953672998659850, guid: e9d95bd33fab0493d94da64a8d425d84, type: 3}
+  weaponFirePrefab: {fileID: 3832654926118288995, guid: 95a20b305708a4a1f901fba4b7cc3318, type: 3}
+  ultChargeAmount: 5

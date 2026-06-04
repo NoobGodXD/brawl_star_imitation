@@ -1,7 +1,7 @@
 using UnityEngine;
 
 /// <summary>
-/// 敵人專用控制層 - 完美結合 WeaponFireBase.Fire() 規範
+/// 敵人專用控制層 - 陣營同步完美版
 /// </summary>
 [RequireComponent(typeof(Rigidbody))]
 public class EnemyAIController : MonoBehaviour
@@ -36,7 +36,15 @@ public class EnemyAIController : MonoBehaviour
         rb = GetComponent<Rigidbody>();
         rb.constraints = RigidbodyConstraints.FreezeRotationX | RigidbodyConstraints.FreezeRotationZ;
         
-        // 嘗試獲取假大腦（如果身上沒掛，程式會自動補上一個避免報錯）
+        // 🌟 核心修正：強制同步對手的血量系統陣營設定
+        HealthSystem myHealth = GetComponent<HealthSystem>();
+        if (myHealth != null)
+        {
+            myHealth.isBlueTeam = false; // 確保對手在血量系統中是紅隊！
+            gameObject.tag = "RedTeam";  // 確保對手標籤是紅隊
+        }
+
+        // 獲取或自動補上假大腦
         dummyController = GetComponent<PlayerAttackHandler>();
         if (dummyController == null)
         {
@@ -118,12 +126,7 @@ public class EnemyAIController : MonoBehaviour
         var fireLogic = logicObj.GetComponent<WeaponFireBase>();
         if (fireLogic != null)
         {
-            // 完美對接！完全按照你的 Fire 函數規範填入 5 個參數：
-            // (1) owner: 大腦參考
-            // (2) origin: 發射點位置
-            // (3) direction: 射擊方向 (朝向主角)
-            // (4) data: 武器資料
-            // (5) gadgetBuff: 對手預設為 false 
+            // 完美對接 5 個參數
             fireLogic.Fire(dummyController, firePoint.position, shootDirection, enemyWeaponData, false);
         }
     }
