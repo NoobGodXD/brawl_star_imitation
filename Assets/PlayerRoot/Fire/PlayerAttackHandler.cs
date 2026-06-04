@@ -104,6 +104,11 @@ public class PlayerAttackHandler : MonoBehaviour
             if (normalWeapon.weaponFirePrefab != null)
             {
                 GameObject obj = Instantiate(normalWeapon.weaponFirePrefab, firePoint);
+                
+                // 🌟 修正：重置發射邏輯物件的本地座標與旋轉，防止在發射起點出現位置偏移
+                obj.transform.localPosition = Vector3.zero;
+                obj.transform.localRotation = Quaternion.identity;
+                
                 normalWeaponFire = obj.GetComponent<WeaponFireBase>();
             }
         }
@@ -120,6 +125,11 @@ public class PlayerAttackHandler : MonoBehaviour
             if (ultWeapon.weaponFirePrefab != null)
             {
                 GameObject obj = Instantiate(ultWeapon.weaponFirePrefab, firePoint);
+                
+                // 🌟 修正：重置大招發射邏輯物件的本地座標與旋轉
+                obj.transform.localPosition = Vector3.zero;
+                obj.transform.localRotation = Quaternion.identity;
+                
                 ultWeaponFire = obj.GetComponent<WeaponFireBase>();
             }
         }
@@ -235,7 +245,11 @@ public class PlayerAttackHandler : MonoBehaviour
             }
         }
 
-        if (Input.GetMouseButtonDown(0))
+        // 🌟 核心重構：手動開火與自動開火邏輯判定
+        bool wantsManualFire = Input.GetMouseButtonDown(0); // LMB 手動
+        bool wantsAutoFire = Input.GetMouseButtonDown(1) || Input.GetKeyDown(KeyCode.Space); // RMB 或 空白鍵 自動
+
+        if (wantsManualFire || wantsAutoFire)
         {
             if (isAimingUlt)
             {
@@ -243,8 +257,10 @@ public class PlayerAttackHandler : MonoBehaviour
                 {
                     if (ultWeaponFire != null)
                     {
-                        // 發射方向由 transform.forward 改為 mouseDirection
-                        ultWeaponFire.Fire(this, firePoint.position, mouseDirection, ultWeapon, false);
+                        // 🌟 根據按下的按鍵，決定開火方向（手動 -> 滑鼠方向；自動 -> 最近敵方方向）
+                        Vector3 fireDirection = wantsManualFire ? mouseDirection : GetAutoAimDirection(ultWeapon.attackRange);
+
+                        ultWeaponFire.Fire(this, firePoint.position, fireDirection, ultWeapon, false);
                         currentCharge = 0f;
                         UpdateChargeUI();
                     }
@@ -257,8 +273,10 @@ public class PlayerAttackHandler : MonoBehaviour
                     currentAmmo--;
                     if (normalWeaponFire != null) 
                     {
-                        // 發射方向由 transform.forward 改為 mouseDirection
-                        normalWeaponFire.Fire(this, firePoint.position, mouseDirection, normalWeapon, hasGadgetBuff);
+                        // 🌟 根據按下的按鍵，決定開火方向（手動 -> 滑鼠方向；自動 -> 最近敵方方向）
+                        Vector3 fireDirection = wantsManualFire ? mouseDirection : GetAutoAimDirection(normalWeapon.attackRange);
+
+                        normalWeaponFire.Fire(this, firePoint.position, fireDirection, normalWeapon, hasGadgetBuff);
                     }
                     if (hasGadgetBuff) { hasGadgetBuff = false; gadgetCooldownTimer = gadgetCooldown; }
                 }
@@ -406,5 +424,58 @@ public class PlayerAttackHandler : MonoBehaviour
             yield return null;
         }
         if (pulseRingCG != null) pulseRingCG.alpha = 0f;
+    }
+
+    // ==================== 🌟 核心新增：自動尋敵與輔助功能 ====================
+
+    /// <summary>
+    /// 根據玩家自身陣營，動態決定攻擊對手的標籤 (防止 3v3 換邊或復用代碼時出錯)
+    /// </summary>
+    private string GetTargetEnemyTag()
+    {
+        HealthSystem myHealth = GetComponent<HealthSystem>();
+        if (myHealth != null)
+        {
+            return myHealth.isBlueTeam ? "RedTeam" : "BlueTeam";
+        }
+        return "RedTeam"; // 預設降級安全值
+    }
+
+    /// <summary>
+    /// 自動瞄準：在射程內尋找最近的敌方活著目標，並回傳方向 [1]
+    /// </summary>
+    private Vector3 GetAutoAimDirection(float range)
+    {
+        string targetTag = GetTargetEnemyTag();
+        GameObject[] enemies = GameObject.FindGameObjectsWithTag(targetTag);
+        GameObject nearestEnemy = null;
+        float nearestDistance = Mathf.Infinity;
+        Vector3 myPosition = transform.position;
+
+        foreach (GameObject enemy in enemies)
+        {
+            HealthSystem health = enemy.GetComponent<HealthSystem>();
+            if (health != null && !health.IsDead)
+            {
+                float distance = Vector3.Distance(myPosition, enemy.transform.position);
+                // 尋找在武器射程內，且距離最近的目標
+                if (distance < nearestDistance && distance <= range)
+                {
+                    nearestDistance = distance;
+                    nearestEnemy = enemy;
+                }
+            }
+        }
+
+        // 如果找到目標，回傳方向
+        if (nearestEnemy != null)
+        {
+            Vector3 dir = (nearestEnemy.transform.position - myPosition).normalized;
+            dir.y = 0; // 鎖定 Y 軸水平射擊
+            return dir;
+        }
+
+        // 若射程內完全沒有活著的敵人，朝角色正前方空放發射
+        return transform.forward;
     }
 }

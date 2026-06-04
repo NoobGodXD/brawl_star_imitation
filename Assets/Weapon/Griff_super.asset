@@ -17,10 +17,9 @@ MonoBehaviour:
   attackRange: 6
   bulletSpeed: 5
   spreadAngle: 60
-  bulletCount: 10
+  bulletCount: 5
   timeBetweenShots: 0
   bulletPrefab: {fileID: 3914409069115100770, guid: 056e26852b4c64fe695971a2116e213f, type: 3}
   aimIndicatorPrefab: {fileID: 2702953672998659850, guid: f44093c1e17f745b5b42bf95d88ee728, type: 3}
   weaponFirePrefab: {fileID: 3832654926118288995, guid: f29e17323cb15474f83f96a115eef8f2, type: 3}
-  damage: 2000
   ultChargeAmount: 15

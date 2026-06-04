@@ -19,7 +19,7 @@ MonoBehaviour:
   spreadAngle: 30
   bulletCount: 0
   timeBetweenShots: 0
-  bulletPrefab: {fileID: 3492830686884544556, guid: c1ba2bf2a6dcc41b68ac009fddcf1c01, type: 3}
+  bulletPrefab: {fileID: 3492830686884544556, guid: 71ed3cbd292354acf82b8e664d1e0e57, type: 3}
   aimIndicatorPrefab: {fileID: 2702953672998659850, guid: e9d95bd33fab0493d94da64a8d425d84, type: 3}
   weaponFirePrefab: {fileID: 3832654926118288995, guid: 95a20b305708a4a1f901fba4b7cc3318, type: 3}
   ultChargeAmount: 5

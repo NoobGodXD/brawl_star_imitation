@@ -543,6 +543,37 @@ Transform:
   m_Children: []
   m_Father: {fileID: 1498991928}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &281717346
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 281717347}
+  m_Layer: 0
+  m_Name: EnemyFirePoint
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &281717347
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 281717346}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 938199085}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &286794525
 GameObject:
   m_ObjectHideFlags: 0
@@ -1672,6 +1703,7 @@ GameObject:
   - component: {fileID: 692703513}
   - component: {fileID: 692703512}
   - component: {fileID: 692703511}
+  - component: {fileID: 692703515}
   m_Layer: 0
   m_Name: PlayerRoot
   m_TagString: BlueTeam
@@ -1797,6 +1829,29 @@ MonoBehaviour:
   healthText: {fileID: 817819400}
   blueTeamColor: {r: 0.2, g: 0.6, b: 1, a: 1}
   redTeamColor: {r: 1, g: 0.2, b: 0.2, a: 1}
+--- !u!136 &692703515
+CapsuleCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 692703509}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 0
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 2
+  m_Radius: 0.7
+  m_Height: 2.5
+  m_Direction: 1
+  m_Center: {x: 0, y: 0, z: 0}
 --- !u!1 &705990563
 GameObject:
   m_ObjectHideFlags: 0
@@ -2267,6 +2322,8 @@ GameObject:
   - component: {fileID: 938199083}
   - component: {fileID: 938199082}
   - component: {fileID: 938199086}
+  - component: {fileID: 938199088}
+  - component: {fileID: 938199087}
   m_Layer: 0
   m_Name: Sphere
   m_TagString: RedTeam
@@ -2366,6 +2423,7 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 1754595795}
+  - {fileID: 281717347}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &938199086
@@ -2390,6 +2448,54 @@ MonoBehaviour:
   healthText: {fileID: 1840603873}
   blueTeamColor: {r: 0.2, g: 0.6, b: 1, a: 1}
   redTeamColor: {r: 1, g: 0.2, b: 0.2, a: 1}
+--- !u!114 &938199087
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 938199081}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 642a2812ecbc349bf97776e7fbe37d22, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::EnemyAIController
+  targetTag: BlueTeam
+  enemyWeaponData: {fileID: 11400000, guid: 9d41799a07a4e43f1af5b6c4705bc58b, type: 2}
+  attackLogicPrefab: {fileID: 3832654926118288995, guid: 95a20b305708a4a1f901fba4b7cc3318, type: 3}
+  firePoint: {fileID: 281717347}
+  moveSpeed: 3
+  attackCooldown: 1.5
+  maxAmmo: 3
+  currentAmmo: 0
+  defaultReloadTime: 2
+--- !u!54 &938199088
+Rigidbody:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 938199081}
+  serializedVersion: 5
+  m_Mass: 1
+  m_LinearDamping: 0
+  m_AngularDamping: 0.05
+  m_CenterOfMass: {x: 0, y: 0, z: 0}
+  m_InertiaTensor: {x: 1, y: 1, z: 1}
+  m_InertiaRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ImplicitCom: 1
+  m_ImplicitTensor: 1
+  m_UseGravity: 1
+  m_IsKinematic: 0
+  m_Interpolate: 0
+  m_Constraints: 0
+  m_CollisionDetection: 0
 --- !u!1 &978375877
 GameObject:
   m_ObjectHideFlags: 0
