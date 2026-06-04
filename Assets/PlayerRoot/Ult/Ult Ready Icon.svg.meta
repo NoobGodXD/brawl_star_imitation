@@ -29,7 +29,7 @@ ScriptedImporter:
   maxTangentAngleEnabled: 0
   maxTangentAngle: 5
   keepTextureAspectRatio: 1
-  textureSize: 256
+  textureSize: 1024
   textureWidth: 256
   textureHeight: 256
   wrapMode: 0
@@ -47,7 +47,7 @@ ScriptedImporter:
       serializedVersion: 2
       x: 0
       y: 0
-      width: 256
-      height: 256
+      width: 1024
+      height: 1024
     SpriteID: c99de9b7bbb67409a805ca9065f25c3f
     PhysicsOutlines: []

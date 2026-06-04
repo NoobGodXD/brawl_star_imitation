@@ -1,5 +1,5 @@
 fileFormatVersion: 2
-guid: 2a2d45cb4482e4b7b8adafe7f248065b
+guid: 9a0c4a2fa8add4ed99d54e22db50c55b
 ScriptedImporter:
   internalIDToNameTable: []
   externalObjects: {}
@@ -39,7 +39,7 @@ ScriptedImporter:
   useSVGPixelsPerUnit: 0
   spriteData:
     TessellationDetail: 0
-    SpriteName: Ultcharge_rate
+    SpriteName: Brawl
     SpritePivot: {x: 0.5, y: 0.5}
     SpriteAlignment: 0
     SpriteBorder: {x: 0, y: 0, z: 0, w: 0}
@@ -48,6 +48,6 @@ ScriptedImporter:
       x: 0
       y: 0
       width: 1024
-      height: 1024
-    SpriteID: 1a7c3b4915f2a41c98dc575cb463614c
+      height: 222
+    SpriteID: 4b0639304ced04f449aa4f6ea504114f
     PhysicsOutlines: []

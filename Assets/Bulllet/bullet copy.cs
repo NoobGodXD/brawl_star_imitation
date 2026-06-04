@@ -30,7 +30,7 @@ public class Bullet : MonoBehaviour
 
     void OnTriggerEnter(Collider other)
     {
-         Debug.Log($"[Bullet Debug] 碰撞發生！打中物件: {other.name} | 物件Tag: {other.tag} | 物件Layer: {LayerMask.LayerToName(other.gameObject.layer)}");
+         
         // 🌟 核心修正 1：先向上尋找受擊者身上（或其父物件中）的 HealthSystem
         HealthSystem enemyHealth = other.GetComponentInParent<HealthSystem>();
 
