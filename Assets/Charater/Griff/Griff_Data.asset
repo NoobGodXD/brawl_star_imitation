@@ -15,7 +15,7 @@ MonoBehaviour:
   characterName: Griff
   modelPrefab: {fileID: 919132149155446097, guid: a6a02c279eb504945a5b4eb430f2f1b8, type: 3}
   animatorController: {fileID: 0}
-  characterPortrait: {fileID: 0}
+  characterPortrait: {fileID: 21300000, guid: a45abca484568413b91ec03ecb9e248c, type: 3}
   maxHealth: 7000
   normalAttack: {fileID: 11400000, guid: a2472320b7c124abcb5cbbbddfd1b268, type: 2}
   ultimateAttack: {fileID: 11400000, guid: 9cbfd270cfcd04d0885988d53b03afe7, type: 2}

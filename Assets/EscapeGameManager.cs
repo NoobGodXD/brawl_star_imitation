@@ -13,13 +13,13 @@ public class KnockoutGameManager : MonoBehaviour
     [SerializeField] private MatchState currentState;
     public MatchState CurrentState => currentState;
 
-    // 🌟 狀態改變事件，供 UIManager 進行解耦
+    // 狀態改變事件，供 UIManager 進行解耦
     public event Action<MatchState> OnStateChanged;
 
-    // 🌟 3v3 展示卡順序事件，傳遞重生點 0, 1, 2 對應的玩家給 UI
+    // 3v3 展示卡順序事件，傳遞重生點 0, 1, 2 對應的玩家給 UI
     public event Action<HealthSystem[], HealthSystem[]> OnShowcaseUpdated;
 
-    // 🌟 比分圓點更新事件：傳遞 3 回合勝負狀態 (int[]) 與 當前局數 (int)
+    // 比分圓點更新事件：傳遞 3 回合勝負狀態 (int[]) 與 當前局數 (int)
     public event Action<int[], int> OnScoreUpdated;
 
     [Header("單局設定 (Data-Driven)")]
@@ -28,7 +28,7 @@ public class KnockoutGameManager : MonoBehaviour
     [SerializeField] private int blueTeamWins = 0;
     [SerializeField] private int redTeamWins = 0;
 
-    // 🌟 記錄 3 局比分燈號 (0:未打, 1:藍勝, 2:紅勝)
+    // 記錄 3 局比分燈號 (0:未打, 1:藍勝, 2:紅勝)
     private int[] roundWinners = new int[3];
 
     [Header("重生點配置")]
@@ -161,7 +161,6 @@ public class KnockoutGameManager : MonoBehaviour
 
     private void RecalculateAlivePlayers()
     {
-        // 尋找場景中包含隱藏物件在內的所有玩家
         HealthSystem[] allPlayers = FindObjectsByType<HealthSystem>(FindObjectsInactive.Include, FindObjectsSortMode.None);
 
         int tempBlue = 0;
@@ -182,6 +181,16 @@ public class KnockoutGameManager : MonoBehaviour
 
     private void ResetPlayersAndApplyPhysicsSetup()
     {
+        // 🌟 修正點 A：Inspector 欄位防呆檢測，如果重生點數量不足會在 Console 報警
+        if (blueTeamSpawns == null || blueTeamSpawns.Length < 3)
+        {
+            Debug.LogError($"⚠️【出生點配置錯誤】藍隊重生點 (blueTeamSpawns) 數量不足！目前為：{(blueTeamSpawns != null ? blueTeamSpawns.Length : 0)}，請在 GameManager 的 Inspector 中指派 3 個不同的出生點物件！");
+        }
+        if (redTeamSpawns == null || redTeamSpawns.Length < 3)
+        {
+            Debug.LogError($"⚠️【出生點配置錯誤】紅隊重生點 (redTeamSpawns) 數量不足！目前為：{(redTeamSpawns != null ? redTeamSpawns.Length : 0)}，請在 GameManager 的 Inspector 中指派 3 個不同的出生點物件！");
+        }
+
         HealthSystem[] allPlayers = FindObjectsByType<HealthSystem>(FindObjectsInactive.Include, FindObjectsSortMode.None);
 
         HealthSystem[] orderedBlue = new HealthSystem[3];
@@ -198,8 +207,8 @@ public class KnockoutGameManager : MonoBehaviour
             {
                 if (blueIndex < blueTeamSpawns.Length)
                 {
-                    player.transform.position = blueTeamSpawns[blueIndex].position;
-                    player.transform.rotation = blueTeamSpawns[blueIndex].rotation;
+                    // 🌟 修正點 B：呼叫安全傳送函數，避開 NavMesh / CharacterController 的物理阻擋
+                    TeleportPlayer(player, blueTeamSpawns[blueIndex]);
                     orderedBlue[blueIndex] = player; // 儲存重生點 0, 1, 2 順序的玩家
                     blueIndex++;
                 }
@@ -208,8 +217,8 @@ public class KnockoutGameManager : MonoBehaviour
             {
                 if (redIndex < redTeamSpawns.Length)
                 {
-                    player.transform.position = redTeamSpawns[redIndex].position;
-                    player.transform.rotation = redTeamSpawns[redIndex].rotation;
+                    // 🌟 修正點 B：呼叫安全傳送函數，避開 NavMesh / CharacterController 的物理阻擋
+                    TeleportPlayer(player, redTeamSpawns[redIndex]);
                     orderedRed[redIndex] = player; // 儲存重生點 0, 1, 2 順序的玩家
                     redIndex++;
                 }
@@ -223,6 +232,36 @@ public class KnockoutGameManager : MonoBehaviour
         OnScoreUpdated?.Invoke(roundWinners, currentRound);
 
         RecalculateAlivePlayers();
+    }
+
+    // 🌟 修正點 B 的安全傳送輔助函數：解決物理阻擋、自動尋路鎖死位移的問題
+    private void TeleportPlayer(HealthSystem player, Transform spawnPoint)
+    {
+        if (player == null || spawnPoint == null) return;
+
+        // 1. 處理 NavMeshAgent (這是自動尋路元件阻擋傳送最常見的原因)
+        var agent = player.GetComponent<UnityEngine.AI.NavMeshAgent>();
+        if (agent != null && agent.isActiveAndEnabled)
+        {
+            agent.Warp(spawnPoint.position); // 使用 Warp 專用 API 強制移至網格點，避免 snap back
+            player.transform.rotation = spawnPoint.rotation;
+            return;
+        }
+
+        // 2. 處理 CharacterController (防止角色碰撞包圍體卡死在原地)
+        var controller = player.GetComponent<CharacterController>();
+        if (controller != null)
+        {
+            controller.enabled = false; // 暫時關閉碰撞體
+            player.transform.position = spawnPoint.position;
+            player.transform.rotation = spawnPoint.rotation;
+            controller.enabled = true;  // 移到位移後重新啟用
+            return;
+        }
+
+        // 3. 一般傳送
+        player.transform.position = spawnPoint.position;
+        player.transform.rotation = spawnPoint.rotation;
     }
 
     private void SetPlayerInputLock(bool isLocked)

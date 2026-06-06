@@ -21,11 +21,9 @@ public class KnockoutUIManager : MonoBehaviour
     [Header("首局展示卡 (Showcase Slots - 3v3)")]
     public Image[] blueShowcasePortraits;
     public TextMeshProUGUI[] blueShowcasePlayerNames;
-    public TextMeshProUGUI[] blueShowcaseCharacterNames;
 
     public Image[] redShowcasePortraits;
     public TextMeshProUGUI[] redShowcasePlayerNames;
-    public TextMeshProUGUI[] redShowcaseCharacterNames;
 
     [Header("比分燈號組件 (獨立置於 Canvas 下)")]
     public ScoreBoardUI scoreBoard;
@@ -54,19 +52,22 @@ public class KnockoutUIManager : MonoBehaviour
     {
         if (Instance == null) Instance = this;
         else Destroy(gameObject);
-    }
 
-    void Start()
-    {
-        // 🌟 初始化防禦：清空倒數與結束文字
-        if (countdownText != null) countdownText.text = "";
-        if (roundEndStatusText != null) roundEndStatusText.text = "";
-
-        ShowPanelImmediate(introPanel);
+        // 🌟 修正：移至 Awake 立即隱藏，比 Start() 更早執行，完全防止遊戲啟動時第一影格閃現任何白色背景
         HidePanelImmediate(hudPanel);
         HidePanelImmediate(roundEndPanel);
         HidePanelImmediate(victoryPanel);
         HidePanelImmediate(highlightsPanel);
+    }
+
+    void Start()
+    {
+        // 確保第一幀就強制顯示開場展示面板
+        ShowPanelImmediate(introPanel);
+
+        // 初始化防禦：清空倒數與結束文字
+        if (countdownText != null) countdownText.text = "";
+        if (roundEndStatusText != null) roundEndStatusText.text = "";
 
         if (battleStartImage != null) battleStartImage.gameObject.SetActive(false);
 
@@ -107,23 +108,13 @@ public class KnockoutUIManager : MonoBehaviour
         switch (newState)
         {
             case KnockoutGameManager.MatchState.Intro:
-                StartCoroutine(FadePanel(introPanel, 1f, 0.2f));
-                StartCoroutine(FadePanel(hudPanel, 0f, 0.2f));
-                StartCoroutine(FadePanel(roundEndPanel, 0f, 0.2f));
-                if (scoreBoardCG != null) StartCoroutine(FadePanel(scoreBoardCG, 0f, 0.2f));
-
                 // 獲取當前回合數
                 int currentRound = GetCurrentRoundFromManager();
 
-                // 🌟 修正：完全關閉並隱藏「ROUND X」文字，不再顯示第幾次的 ROUND
-                if (roundStartTitleText != null)
-                {
-                    roundStartTitleText.gameObject.SetActive(false);
-                }
-
-                // 只有在第一局 (Round 1) 時，才啟用倒數文字並啟動 5 秒倒數協程
+                // 🌟 修正：只有在第一局 (Round 1) 有倒數時，才顯示首局展示卡面板 (introPanel)！
                 if (currentRound == 1)
                 {
+                    StartCoroutine(FadePanel(introPanel, 1f, 0.2f));
                     if (countdownText != null)
                     {
                         countdownText.gameObject.SetActive(true);
@@ -132,28 +123,40 @@ public class KnockoutUIManager : MonoBehaviour
                 }
                 else
                 {
-                    // 第二局以上，直接清空並隱藏倒數文字，不啟動倒數協程
+                    // 🌟 第二局以上（中間局與局之間），直接徹底隱藏展示卡與倒數文字！
+                    HidePanelImmediate(introPanel);
                     if (countdownText != null)
                     {
                         countdownText.text = "";
                         countdownText.gameObject.SetActive(false);
                     }
                 }
-                break;
 
+                StartCoroutine(FadePanel(hudPanel, 0f, 0.2f));
+                StartCoroutine(FadePanel(roundEndPanel, 0f, 0.2f));
+                if (scoreBoardCG != null) StartCoroutine(FadePanel(scoreBoardCG, 0f, 0.2f));
+
+                // 完全關閉並隱藏「ROUND X」文字，不再顯示第幾次的 ROUND
+                if (roundStartTitleText != null)
+                {
+                    roundStartTitleText.gameObject.SetActive(false);
+                }
+                break;
 
             case KnockoutGameManager.MatchState.Playing:
-                StartCoroutine(FadePanel(introPanel, 0f, 0.3f));
-                StartCoroutine(FadePanel(hudPanel, 1f, 0.3f));
-                if (scoreBoardCG != null) StartCoroutine(FadePanel(scoreBoardCG, 1f, 0.3f));
-                
-                // 🌟 修正：開始遊玩時，徹底隱藏「ROUND X」與「倒數文字」物件，絕不殘留在畫面上！
-                if (roundStartTitleText != null) roundStartTitleText.gameObject.SetActive(false);
-                if (countdownText != null) countdownText.gameObject.SetActive(false);
+                        // 🌟 修正：倒數完 5 秒進入 Playing 的瞬間，立刻且徹底關閉介紹面板（0幀延遲），保證開戰藝術字彈出時畫面是乾淨的！
+                        HidePanelImmediate(introPanel); 
+                        
+                        StartCoroutine(FadePanel(hudPanel, 1f, 0.3f));
+                        if (scoreBoardCG != null) StartCoroutine(FadePanel(scoreBoardCG, 1f, 0.3f));
+                        
+                        // 徹底隱藏「ROUND X」與「倒數文字」物件
+                        if (roundStartTitleText != null) roundStartTitleText.gameObject.SetActive(false);
+                        if (countdownText != null) countdownText.gameObject.SetActive(false);
 
-                if (battleStartCoroutine != null) StopCoroutine(battleStartCoroutine);
-                battleStartCoroutine = StartCoroutine(PlayBattleStartAnimationRoutine());
-                break;
+                        if (battleStartCoroutine != null) StopCoroutine(battleStartCoroutine);
+                        battleStartCoroutine = StartCoroutine(PlayBattleStartAnimationRoutine());
+                        break;
 
             case KnockoutGameManager.MatchState.RoundEnd:
                 StartCoroutine(FadePanel(hudPanel, 0f, 0.2f));
@@ -182,7 +185,7 @@ public class KnockoutUIManager : MonoBehaviour
         if (scoreBoardCG != null) StartCoroutine(FadePanel(scoreBoardCG, 0f, 0.2f));
     }
 
-    // 🌟 自動反射獲取當前回合數的防編譯報錯函數
+    // 自動反射獲取當前回合數的防編譯報錯函數
     private int GetCurrentRoundFromManager()
     {
         if (KnockoutGameManager.Instance == null) return 1;
@@ -190,7 +193,6 @@ public class KnockoutUIManager : MonoBehaviour
         {
             System.Type type = KnockoutGameManager.Instance.GetType();
             
-            // 優先尋找包含 "Round" 名稱的公開/私有屬性（Property）
             var properties = type.GetProperties(System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
             foreach (var prop in properties)
             {
@@ -200,7 +202,6 @@ public class KnockoutUIManager : MonoBehaviour
                 }
             }
 
-            // 尋找包含 "Round" 名稱的公開/私有欄位（Field）
             var fields = type.GetFields(System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
             foreach (var field in fields)
             {
@@ -225,9 +226,6 @@ public class KnockoutUIManager : MonoBehaviour
 
                 if (blueShowcasePlayerNames[i] != null)
                     blueShowcasePlayerNames[i].text = bluePlayers[i].playerName;
-
-                if (blueShowcaseCharacterNames[i] != null)
-                    blueShowcaseCharacterNames[i].text = bluePlayers[i].characterName;
             }
             else
             {
@@ -245,9 +243,6 @@ public class KnockoutUIManager : MonoBehaviour
 
                 if (redShowcasePlayerNames[i] != null)
                     redShowcasePlayerNames[i].text = redPlayers[i].playerName;
-
-                if (redShowcaseCharacterNames[i] != null)
-                    redShowcaseCharacterNames[i].text = redPlayers[i].characterName;
             }
             else
             {
@@ -389,6 +384,7 @@ public class KnockoutUIManager : MonoBehaviour
 
         if (targetAlpha > 0f)
         {
+            group.gameObject.SetActive(true);
             group.blocksRaycasts = true;
             group.interactable = true;
         }
@@ -406,12 +402,14 @@ public class KnockoutUIManager : MonoBehaviour
         {
             group.blocksRaycasts = false;
             group.interactable = false;
+            group.gameObject.SetActive(false);
         }
     }
 
     private void ShowPanelImmediate(CanvasGroup group)
     {
         if (group == null) return;
+        group.gameObject.SetActive(true); 
         group.alpha = 1f;
         group.blocksRaycasts = true;
         group.interactable = true;
@@ -423,5 +421,6 @@ public class KnockoutUIManager : MonoBehaviour
         group.alpha = 0f;
         group.blocksRaycasts = false;
         group.interactable = false;
+        group.gameObject.SetActive(false); 
     }
 }
