@@ -28,6 +28,10 @@ public class HealthSystem : MonoBehaviour
     [Header("顏色設定")]
     public Color blueTeamColor = new Color(0.2f, 0.6f, 1f, 1f);
     public Color redTeamColor = new Color(1f, 0.2f, 0.2f, 1f);
+    [Header("結算數據統計")]
+    public int currentKills;         // 當前累計擊殺數
+    public int currentDeaths;        // 當前累計死亡數
+    public float totalDamageDealt;   // 當前累計造成傷害量
 
     private KnockoutGameManager gameManager;
 

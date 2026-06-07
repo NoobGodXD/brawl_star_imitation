@@ -8,15 +8,12 @@ public class KnockoutUIManager : MonoBehaviour
 {
     public static KnockoutUIManager Instance { get; private set; }
 
-    // 靜態屬性，用來通知其他腳本此時是否正在播放開戰動畫（用來鎖定玩家移動/攻擊）
     public static bool IsBattleStarting { get; private set; } = false;
 
-    [Header("四大核心狀態面板 (CanvasGroup)")]
+    [Header("三大核心狀態面板 (CanvasGroup)")] 
     public CanvasGroup introPanel;
     public CanvasGroup hudPanel;
     public CanvasGroup roundEndPanel;
-    public CanvasGroup victoryPanel;
-    public CanvasGroup highlightsPanel;
 
     [Header("首局展示卡 (Showcase Slots - 3v3)")]
     public Image[] blueShowcasePortraits;
@@ -37,7 +34,6 @@ public class KnockoutUIManager : MonoBehaviour
     [Header("🌟 開戰藝術字圖片動畫 (Brawl Stars Style)")]
     public Image battleStartImage;
     public float scaleDuration = 0.25f;
-    [Tooltip("藝術字在中央停留展示時間（已修改為 0.5 秒左右）")]
     public float battleShowDuration = 0.5f; 
 
     [Header("擊殺提示 (Object Pooling)")]
@@ -53,19 +49,14 @@ public class KnockoutUIManager : MonoBehaviour
         if (Instance == null) Instance = this;
         else Destroy(gameObject);
 
-        // 🌟 修正：移至 Awake 立即隱藏，比 Start() 更早執行，完全防止遊戲啟動時第一影格閃現任何白色背景
         HidePanelImmediate(hudPanel);
         HidePanelImmediate(roundEndPanel);
-        HidePanelImmediate(victoryPanel);
-        HidePanelImmediate(highlightsPanel);
     }
 
     void Start()
     {
-        // 確保第一幀就強制顯示開場展示面板
         ShowPanelImmediate(introPanel);
 
-        // 初始化防禦：清空倒數與結束文字
         if (countdownText != null) countdownText.text = "";
         if (roundEndStatusText != null) roundEndStatusText.text = "";
 
@@ -108,13 +99,22 @@ public class KnockoutUIManager : MonoBehaviour
         switch (newState)
         {
             case KnockoutGameManager.MatchState.Intro:
-                // 獲取當前回合數
-                int currentRound = GetCurrentRoundFromManager();
+                StartCoroutine(FadePanel(hudPanel, 0f, 0.2f));
+                StartCoroutine(FadePanel(roundEndPanel, 0f, 0.2f));
+                if (scoreBoardCG != null) StartCoroutine(FadePanel(scoreBoardCG, 0f, 0.2f));
 
-                // 🌟 修正：只有在第一局 (Round 1) 有倒數時，才顯示首局展示卡面板 (introPanel)！
+                int currentRound = KnockoutGameManager.Instance != null ? KnockoutGameManager.Instance.CurrentRound : 1;
+
+                if (roundStartTitleText != null)
+                {
+                    roundStartTitleText.gameObject.SetActive(false);
+                }
+
+                // 🌟 核心修正：將 introPanel 的淡入淡出完全收入 currentRound 判斷中！
                 if (currentRound == 1)
                 {
-                    StartCoroutine(FadePanel(introPanel, 1f, 0.2f));
+                    // 只有在第一局倒數時才淡入展示卡
+                    StartCoroutine(FadePanel(introPanel, 1f, 0.2f)); 
                     if (countdownText != null)
                     {
                         countdownText.gameObject.SetActive(true);
@@ -123,7 +123,7 @@ public class KnockoutUIManager : MonoBehaviour
                 }
                 else
                 {
-                    // 🌟 第二局以上（中間局與局之間），直接徹底隱藏展示卡與倒數文字！
+                    // 🌟 第二局以上，直接徹底關閉展示卡，不論它在編輯器中是否被開啟，都強制將其 Active 設為 false！
                     HidePanelImmediate(introPanel);
                     if (countdownText != null)
                     {
@@ -131,32 +131,20 @@ public class KnockoutUIManager : MonoBehaviour
                         countdownText.gameObject.SetActive(false);
                     }
                 }
-
-                StartCoroutine(FadePanel(hudPanel, 0f, 0.2f));
-                StartCoroutine(FadePanel(roundEndPanel, 0f, 0.2f));
-                if (scoreBoardCG != null) StartCoroutine(FadePanel(scoreBoardCG, 0f, 0.2f));
-
-                // 完全關閉並隱藏「ROUND X」文字，不再顯示第幾次的 ROUND
-                if (roundStartTitleText != null)
-                {
-                    roundStartTitleText.gameObject.SetActive(false);
-                }
                 break;
 
             case KnockoutGameManager.MatchState.Playing:
-                        // 🌟 修正：倒數完 5 秒進入 Playing 的瞬間，立刻且徹底關閉介紹面板（0幀延遲），保證開戰藝術字彈出時畫面是乾淨的！
-                        HidePanelImmediate(introPanel); 
-                        
-                        StartCoroutine(FadePanel(hudPanel, 1f, 0.3f));
-                        if (scoreBoardCG != null) StartCoroutine(FadePanel(scoreBoardCG, 1f, 0.3f));
-                        
-                        // 徹底隱藏「ROUND X」與「倒數文字」物件
-                        if (roundStartTitleText != null) roundStartTitleText.gameObject.SetActive(false);
-                        if (countdownText != null) countdownText.gameObject.SetActive(false);
+                HidePanelImmediate(introPanel); 
+                
+                StartCoroutine(FadePanel(hudPanel, 1f, 0.3f));
+                if (scoreBoardCG != null) StartCoroutine(FadePanel(scoreBoardCG, 1f, 0.3f));
+                
+                if (roundStartTitleText != null) roundStartTitleText.gameObject.SetActive(false);
+                if (countdownText != null) countdownText.gameObject.SetActive(false);
 
-                        if (battleStartCoroutine != null) StopCoroutine(battleStartCoroutine);
-                        battleStartCoroutine = StartCoroutine(PlayBattleStartAnimationRoutine());
-                        break;
+                if (battleStartCoroutine != null) StopCoroutine(battleStartCoroutine);
+                battleStartCoroutine = StartCoroutine(PlayBattleStartAnimationRoutine());
+                break;
 
             case KnockoutGameManager.MatchState.RoundEnd:
                 StartCoroutine(FadePanel(hudPanel, 0f, 0.2f));
@@ -170,49 +158,9 @@ public class KnockoutUIManager : MonoBehaviour
                     roundEndStatusText.text = "MATCH OVER!";
                     roundEndStatusText.color = Color.white;
                 }
-                StartCoroutine(MatchEndSequenceRoutine());
+                StartCoroutine(FadePanel(roundEndPanel, 1f, 0.2f));
                 break;
         }
-    }
-
-    // 讓 MATCH OVER! 停留 3 秒再切換勝利面板
-    private IEnumerator MatchEndSequenceRoutine()
-    {
-        yield return new WaitForSeconds(3.0f);
-
-        StartCoroutine(FadePanel(roundEndPanel, 0f, 0.2f));
-        StartCoroutine(FadePanel(victoryPanel, 1f, 0.3f));
-        if (scoreBoardCG != null) StartCoroutine(FadePanel(scoreBoardCG, 0f, 0.2f));
-    }
-
-    // 自動反射獲取當前回合數的防編譯報錯函數
-    private int GetCurrentRoundFromManager()
-    {
-        if (KnockoutGameManager.Instance == null) return 1;
-        try
-        {
-            System.Type type = KnockoutGameManager.Instance.GetType();
-            
-            var properties = type.GetProperties(System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-            foreach (var prop in properties)
-            {
-                if (prop.Name.ToLower().Contains("round") && prop.PropertyType == typeof(int))
-                {
-                    return (int)prop.GetValue(KnockoutGameManager.Instance);
-                }
-            }
-
-            var fields = type.GetFields(System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-            foreach (var field in fields)
-            {
-                if (field.Name.ToLower().Contains("round") && field.FieldType == typeof(int))
-                {
-                    return (int)field.GetValue(KnockoutGameManager.Instance);
-                }
-            }
-        }
-        catch {}
-        return 1; // 預設回傳 1
     }
 
     private void UpdateShowcaseUI(HealthSystem[] bluePlayers, HealthSystem[] redPlayers)
@@ -334,48 +282,6 @@ public class KnockoutUIManager : MonoBehaviour
         IsBattleStarting = false;
     }
 
-    public void OnVictoryContinueClicked()
-    {
-        StartCoroutine(FadePanel(victoryPanel, 0f, 0.2f));
-        StartCoroutine(FadePanel(highlightsPanel, 1f, 0.3f));
-    }
-
-    public void OnHighlightsContinueClicked()
-    {
-        UnityEngine.SceneManagement.SceneManager.LoadScene(0);
-    }
-
-    private void InitializeKillFeedPool()
-    {
-        if (killFeedPrefab == null || killFeedContainer == null) return;
-        for (int i = 0; i < poolSize; i++)
-        {
-            GameObject obj = Instantiate(killFeedPrefab, killFeedContainer);
-            obj.SetActive(false);
-            killFeedPool.Enqueue(obj);
-        }
-    }
-
-    public void SpawnKillFeed(bool isBlueVictim, string killer, string victim)
-    {
-        if (killFeedPool.Count == 0) return;
-        GameObject item = killFeedPool.Dequeue();
-        item.SetActive(true);
-        item.transform.SetAsLastSibling();
-
-        KillFeedItem feedScript = item.GetComponent<KillFeedItem>();
-        if (feedScript != null)
-        {
-            feedScript.Setup(isBlueVictim, killer, victim, this);
-        }
-    }
-
-    public void ReturnToPool(GameObject item)
-    {
-        item.SetActive(false);
-        killFeedPool.Enqueue(item);
-    }
-
     private IEnumerator FadePanel(CanvasGroup group, float targetAlpha, float duration)
     {
         if (group == null) yield break;
@@ -422,5 +328,58 @@ public class KnockoutUIManager : MonoBehaviour
         group.blocksRaycasts = false;
         group.interactable = false;
         group.gameObject.SetActive(false); 
+    }
+
+    private void InitializeKillFeedPool()
+    {
+        if (killFeedPrefab == null || killFeedContainer == null) return;
+        for (int i = 0; i < poolSize; i++)
+        {
+            GameObject obj = Instantiate(killFeedPrefab, killFeedContainer);
+            obj.SetActive(false);
+            killFeedPool.Enqueue(obj);
+        }
+    }
+
+    // 🌟 修正：大亂鬥風格雙頭像擊殺廣播
+    public void SpawnKillFeed(bool isBlueVictim, string killer, string victim)
+    {
+        if (killFeedPool.Count == 0) return;
+        GameObject item = killFeedPool.Dequeue();
+        item.SetActive(true);
+        item.transform.SetAsLastSibling();
+
+        KillFeedItem feedScript = item.GetComponent<KillFeedItem>();
+        if (feedScript != null)
+        {
+            // 🌟 修正：動態在場景中尋找擊殺者與被擊殺者的頭像 Sprite
+            HealthSystem killerHealth = FindPlayerByName(killer);
+            HealthSystem victimHealth = FindPlayerByName(victim);
+            Sprite killerPortrait = killerHealth != null ? killerHealth.characterPortrait : null;
+            Sprite victimPortrait = victimHealth != null ? victimHealth.characterPortrait : null;
+
+            // 呼叫升級版 Setup 進行對齊與顯示
+            feedScript.Setup(isBlueVictim, killer, killerPortrait, victim, victimPortrait, this);
+        }
+    }
+
+    // 🌟 修正：輔助尋找函數，利用玩家名字在場景中定位其 HealthSystem
+    private HealthSystem FindPlayerByName(string name)
+    {
+        HealthSystem[] all = FindObjectsByType<HealthSystem>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+        foreach (var p in all)
+        {
+            if (p != null && p.playerName == name)
+            {
+                return p;
+            }
+        }
+        return null;
+    }
+
+    public void ReturnToPool(GameObject item)
+    {
+        item.SetActive(false);
+        killFeedPool.Enqueue(item);
     }
 }

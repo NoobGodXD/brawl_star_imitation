@@ -3,10 +3,10 @@ using System.Collections;
 using System;
 using System.Collections.Generic;
 
-public class EscapeGameManager : MonoBehaviour
+public class KnockoutGameManager : MonoBehaviour
 {
     // 單例模式，方便其他控制腳本與 UI 隨時讀取狀態
-    public static EscapeGameManager Instance { get; private set; }
+    public static KnockoutGameManager Instance { get; private set; }
 
     public enum MatchState { Intro, Playing, RoundEnd, MatchEnd }
 
@@ -29,7 +29,7 @@ public class EscapeGameManager : MonoBehaviour
     [SerializeField] private int blueTeamWins = 0;
     [SerializeField] private int redTeamWins = 0;
 
-    // 🌟 修正一：開放公開屬性，讓 UI 管理器能 100% 精準讀取當前回合
+    // 公開屬性：讓 UI 管理器能 100% 精準讀取當前回合
     public int CurrentRound => currentRound;
 
     // 記錄 3 局比分燈號 (0:未打, 1:藍勝, 2:紅勝)
@@ -55,12 +55,12 @@ public class EscapeGameManager : MonoBehaviour
         StartCoroutine(MatchFlowRoutine());
     }
 
-    // 🌟 修正二：僅在 Unity 編輯器測試時生效的快捷測試功能
+    // 僅在 Unity 編輯器測試時生效的快捷測試功能
 #if UNITY_EDITOR
     void Update()
     {
-        // 隨時在 Play 狀態下按下鍵盤上的 F10，立馬打包一組模擬戰績，並跳轉至結算畫面！
-        if (Input.GetKeyDown(KeyCode.F10))
+        // 🌟 修正：改用鍵盤 "T" 鍵 (Test)，避開 Unity 編輯器內建的 F10 暫停快捷鍵
+        if (Input.GetKeyDown(KeyCode.T))
         {
             TriggerMockMatchEnd();
         }
@@ -199,7 +199,7 @@ public class EscapeGameManager : MonoBehaviour
         }
     }
 
-    // 打包戰績到 MatchResultData，並於 1.5 秒後直接加載結算場景
+    // 打包戰績到 MatchResultData，並於 1.5 秒後加載結算場景
     private IEnumerator MatchEndRoutine()
     {
         currentState = MatchState.MatchEnd;

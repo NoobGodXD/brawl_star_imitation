@@ -1,87 +1,82 @@
 using UnityEngine;
 using UnityEngine.UI;
-using TMPro;
 using System.Collections;
+using TMPro;
 
 public class KillFeedItem : MonoBehaviour
 {
-    public TextMeshProUGUI feedText;
-    public Image backgroundImage;
+    [Header("大亂鬥風格雙頭像排版")]
+    public Image backgroundImage;        // 橫條背景
+    
+    [Header("擊殺者 (Killer)")]
+    public Image killerPortraitImage;    // 擊殺者頭像 Image
+    public TextMeshProUGUI killerNameText;// 擊殺者名稱
 
-    [Header("配色與動畫設定")]
-    public Color allyKillColor = new Color(0.2f, 0.6f, 1f, 0.9f); // 藍色背景 (己方得手)
-    public Color enemyKillColor = new Color(0.9f, 0.2f, 0.2f, 0.9f); // 紅色背景 (敵方得手)
+    [Header("擊殺標誌")]
+    public Image weaponIconImage;        // 擊殺圖示 (如小槍/雙劍圖案)
 
-    public float slideDuration = 0.25f;  // 滑動花費時間
-    public float showDuration = 1.5f;     // 在中央停留時間 (1.5秒)
+    [Header("被擊殺者 (Victim)")]
+    public Image victimPortraitImage;    // 被擊殺者頭像 Image
+    public TextMeshProUGUI victimNameText;// 被擊殺者名稱
+    public GameObject skullIcon;         // 被擊殺者頭像右上角的「小骷髏頭」物件
 
-    private KnockoutUIManager uiManager;
-    private RectTransform rectTransform;
-    private Coroutine slideCoroutine;
+    [Header("顏色與時間參數")]
+    public Color allyKillBgColor = new Color(0.12f, 0.45f, 0.9f, 0.85f);  // 我方擊敗對手 (藍底)
+    public Color enemyKillBgColor = new Color(0.9f, 0.12f, 0.12f, 0.85f); // 敵方擊敗我方 (紅底)
+    public float showDuration = 3f;      // 停留時間
 
-    private void Awake()
+    private KnockoutUIManager manager;
+
+    // 🌟 升級版初始化：接收頭像 Sprite，動態渲染排版
+    public void Setup(bool isBlueVictim, string killerName, Sprite killerPortrait, string victimName, Sprite victimPortrait, KnockoutUIManager uiManager)
     {
-        rectTransform = GetComponent<RectTransform>();
-    }
+        this.manager = uiManager;
 
-    public void Setup(bool isBlueVictim, string killer, string victim, KnockoutUIManager manager)
-    {
-        uiManager = manager;
+        // 1. 設定文字
+        if (killerNameText != null) killerNameText.text = killerName;
+        if (victimNameText != null) victimNameText.text = victimName;
 
-        if (feedText != null)
+        // 2. 設定雙方頭像
+        if (killerPortraitImage != null)
         {
-            feedText.text = $"<b>{killer}</b> 擊倒了 <b>{victim}</b>";
+            killerPortraitImage.sprite = killerPortrait;
+            killerPortraitImage.gameObject.SetActive(killerPortrait != null);
         }
 
-        // 🌟 顏色判定：若是己方擊敗敵方（敵方死亡，即 isBlueVictim 為 false）顯示藍色
+        if (victimPortraitImage != null)
+        {
+            victimPortraitImage.sprite = victimPortrait;
+            victimPortraitImage.gameObject.SetActive(victimPortrait != null);
+        }
+
+        // 3. 顯示小骷髏頭
+        if (skullIcon != null)
+        {
+            skullIcon.SetActive(true);
+        }
+
+        // 4. 根據是誰死亡，自動調整底圖顏色
+        // 藍隊隊員死亡為紅底（Enemy Kill），紅隊隊員死亡為藍底（Ally Kill）
         if (backgroundImage != null)
         {
-            backgroundImage.color = isBlueVictim ? enemyKillColor : allyKillColor;
+            backgroundImage.color = isBlueVictim ? enemyKillBgColor : allyKillBgColor;
         }
 
-        // 啟動滑動與生命週期協程
-        if (slideCoroutine != null) StopCoroutine(slideCoroutine);
-        slideCoroutine = StartCoroutine(SlideAnimationRoutine());
+        // 5. 啟動自動回收協程
+        StopAllCoroutines();
+        StartCoroutine(AutoDestroyRoutine());
     }
 
-    private IEnumerator SlideAnimationRoutine()
+    private IEnumerator AutoDestroyRoutine()
     {
-        if (rectTransform == null) yield break;
-
-        // 1. 初始位置：螢幕左側外面 (X = -500f)
-        Vector2 startPos = new Vector2(-500f, rectTransform.anchoredPosition.y);
-        // 2. 目標位置：滑入位置 (X = 30f)
-        Vector2 targetPos = new Vector2(30f, rectTransform.anchoredPosition.y);
-
-        rectTransform.anchoredPosition = startPos;
-        float elapsed = 0f;
-
-        // 🌟 滑入動畫 (邊緣往中心移動)
-        while (elapsed < slideDuration)
-        {
-            elapsed += Time.deltaTime;
-            rectTransform.anchoredPosition = Vector2.Lerp(startPos, targetPos, elapsed / slideDuration);
-            yield return null;
-        }
-        rectTransform.anchoredPosition = targetPos;
-
-        // 🌟 顯示並停留約 1.5 秒
         yield return new WaitForSeconds(showDuration);
-
-        // 🌟 滑出動畫 (往左邊緣退回)
-        elapsed = 0f;
-        while (elapsed < slideDuration)
+        if (manager != null)
         {
-            elapsed += Time.deltaTime;
-            rectTransform.anchoredPosition = Vector2.Lerp(targetPos, startPos, elapsed / slideDuration);
-            yield return null;
+            manager.ReturnToPool(gameObject);
         }
-        rectTransform.anchoredPosition = startPos;
-
-        // 將自己放回物件池
-        if (uiManager != null)
+        else
         {
-            uiManager.ReturnToPool(gameObject);
+            gameObject.SetActive(false);
         }
     }
 }
