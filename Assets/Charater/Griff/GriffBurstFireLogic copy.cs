@@ -15,19 +15,48 @@ public class GriffBurstFireLogic : WeaponFireBase
 
     private IEnumerator FireBurstRoutine(PlayerAttackHandler player, Vector3 origin, Vector3 direction, WeaponData data)
     {
+        // 🌟【核心修正】：在第一波發射前，精算出發射點相對於角色中心點的相對偏移向量
+        Vector3 relativeOffset = Vector3.zero;
+        if (player != null)
+        {
+            relativeOffset = origin - player.transform.position;
+        }
+
         for (int w = 0; w < waves; w++)
         {
-            // 🌟 核心修正：動態取得發射者當前的 firePoint 位置！
-            // 這樣不論玩家還是 AI 在移動，子彈都會從最新的發射點位置產生
-            Vector3 currentOrigin = (player != null && player.firePoint != null) ? player.firePoint.position : origin;
+            // 預設防呆回退值
+            Vector3 currentOrigin = origin;
+
+            if (player != null)
+            {
+                // 優先順序 1：檢查 AI 控制器上有沒有直接掛載現成的 firePoint
+                var ai = player.GetComponent<EnemyAIController>();
+                if (ai != null && ai.firePoint != null)
+                {
+                    currentOrigin = ai.firePoint.position;
+                }
+                // 優先順序 2：直接在物件子層級中自動搜尋名為 "FirePoint" 的物件
+                else
+                {
+                    Transform fp = player.transform.Find("FirePoint");
+                    if (fp == null) fp = player.transform.Find("firePoint");
+
+                    if (fp != null)
+                    {
+                        currentOrigin = fp.position;
+                    }
+                    // 優先順序 3：【終極動態追蹤】直接用角色當前世界座標 + 初始發射偏移量
+                    // 如此一來，不論大腦有沒有設定 firePoint，子彈發射點都會完美跟隨身體移動！
+                    else
+                    {
+                        currentOrigin = player.transform.position + relativeOffset;
+                    }
+                }
+            }
 
             ExecuteWave(player, currentOrigin, direction, data);
             yield return new WaitForSeconds(timeBetweenWaves);
         }
-
-        // 🌟 核心修正：此處【不可以】寫 Destroy(gameObject)！
-        // 因為本系統採用了「單次生成、重複使用（Cache）」的機制。
-        // 如果銷毀了，玩家/AI 開第二槍時會報錯。
     }
 
     private void ExecuteWave(PlayerAttackHandler player, Vector3 origin, Vector3 direction, WeaponData data)
