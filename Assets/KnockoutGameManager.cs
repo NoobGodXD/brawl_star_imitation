@@ -59,7 +59,6 @@ public class KnockoutGameManager : MonoBehaviour
 #if UNITY_EDITOR
     void Update()
     {
-        // 🌟 修正：改用鍵盤 "T" 鍵 (Test)，避開 Unity 編輯器內建的 F10 暫停快捷鍵
         if (Input.GetKeyDown(KeyCode.T))
         {
             TriggerMockMatchEnd();
@@ -199,7 +198,6 @@ public class KnockoutGameManager : MonoBehaviour
         }
     }
 
-    // 打包戰績到 MatchResultData，並於 1.5 秒後加載結算場景
     private IEnumerator MatchEndRoutine()
     {
         currentState = MatchState.MatchEnd;
@@ -409,6 +407,21 @@ public class KnockoutGameManager : MonoBehaviour
             if (agent.isActiveAndEnabled)
             {
                 agent.isStopped = isLocked;
+            }
+        }
+
+        // 🌟 連動 AI 大腦：鎖定狀態下關閉 canAct，避免倒數及結束時偷跑
+        var aiControllers = FindObjectsByType<EnemyAIController>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+        foreach (var ai in aiControllers)
+        {
+            HealthSystem hs = ai.GetComponent<HealthSystem>();
+            if (hs != null && hs.IsDead)
+            {
+                ai.canAct = false;
+            }
+            else
+            {
+                ai.canAct = !isLocked; 
             }
         }
     }

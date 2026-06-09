@@ -1,55 +1,60 @@
 using UnityEngine;
+using System.Collections;
 
 /// <summary>
-/// 敵人專用控制層 - 高難度智慧、獨立彈藥裝填與資料驅動版
+/// 敵人專用控制層 - 支援回合倒數與暫停開關版
 /// </summary>
 [RequireComponent(typeof(Rigidbody))]
 public class EnemyAIController : MonoBehaviour
 {
+    [Header("【遊戲狀態控制】")]
+    [Tooltip("如果為 false，AI 會原地立正且不攻擊（由 GameManager 或 Player 控制）")]
+    public bool canAct = true; 
+
     [Header("【目標與陣營設定】")]
     public string targetTag = "BlueTeam";
 
     [Header("【資料層與邏輯層綁定】")]
-    [Tooltip("請拖入該對手使用的武器資料 (WeaponData)")]
     public WeaponData enemyWeaponData; 
-    
-    [Tooltip("請拖入攻擊邏輯 Prefab (例如：Griff_Main_Logic)")]
     public GameObject attackLogicPrefab;
-    
-    [Tooltip("對手的子彈發射點物件 (FirePoint)")]
     public Transform firePoint;
 
-    [Header("【AI 基本移動數值】")]
-    public float moveSpeed = 3f;
-    [Tooltip("設定兩次連發開火之間的最小物理冷卻時間")]
-    public float attackCooldown = 0.5f;
+    [Header("【AI 基礎行為數值】")]
+    public float moveSpeed = 3.5f;
+    public float attackRange = 6f;
+    public float attackCooldown = 1.5f;
 
-    [Header("【AI 獨立彈藥與裝填系統】（僅修改本腳本實現）")]
-    public int maxAmmo = 3;
-    [SerializeField] private int currentAmmo = 0; // 一開始初始化彈藥為 0
-    [Tooltip("如果武器資料卡沒設定裝彈時間，則以此數值作為 Fallback")]
-    public float defaultReloadTime = 2.0f;
-    private float reloadTimer = 0f;
+    [Header("【荒野亂鬥高級走位設定】")]
+    public float comfortableRange = 4.5f;
+    public float jukeIntensity = 2f;
+    public float jukeFrequency = 0.6f;
+    public int retreatHealthThreshold = 300;
 
     private Transform targetPlayer;
-    private Rigidbody rb;
-    private PlayerAttackHandler dummyController;
-
     private float nextAttackTime;
-    private float attackRange; 
-    private WeaponFireBase cachedFireLogic; 
+    private Rigidbody rb;
+    private HealthSystem myHealth;
 
-    // 智慧走位相關變數
-    private float strafeFactor = 1f; 
-    private float strafeDirectionTimer;
+    private float jukeTimer;
+    private float currentJukeSign = 1f; 
+
+    private float personalMoveSpeed;
+    private float personalJukeFrequency;
+    private float personalJukeIntensity;
+    private float dynamicComfortableRange; 
+
+    private PlayerAttackHandler dummyController;
 
     private void Start()
     {
         rb = GetComponent<Rigidbody>();
-        rb.constraints = RigidbodyConstraints.FreezeRotationX | RigidbodyConstraints.FreezeRotationZ;
+        myHealth = GetComponent<HealthSystem>();
         
-        // 強制同步對手的血量系統陣營設定
-        HealthSystem myHealth = GetComponent<HealthSystem>();
+        if (rb != null)
+        {
+            rb.constraints = RigidbodyConstraints.FreezeRotationX | RigidbodyConstraints.FreezeRotationZ;
+        }
+        
         if (myHealth != null)
         {
             myHealth.isBlueTeam = false; 
@@ -61,102 +66,119 @@ public class EnemyAIController : MonoBehaviour
         {
             dummyController = gameObject.AddComponent<PlayerAttackHandler>();
         }
-        
-        dummyController.firePoint = this.firePoint;
 
-        // 初始化生成發射邏輯
-        if (attackLogicPrefab != null && firePoint != null)
-        {
-            GameObject logicObj = Instantiate(attackLogicPrefab, firePoint);
-            logicObj.transform.localPosition = Vector3.zero;
-            logicObj.transform.localRotation = Quaternion.identity;
-            
-            cachedFireLogic = logicObj.GetComponent<WeaponFireBase>();
-        }
+        personalMoveSpeed = moveSpeed + Random.Range(-0.4f, 0.4f);
+        personalJukeFrequency = jukeFrequency + Random.Range(-0.15f, 0.15f);
+        personalJukeIntensity = jukeIntensity + Random.Range(-0.5f, 0.5f);
 
-        // 資料驅動射程
-        if (enemyWeaponData != null)
-        {
-            attackRange = Mathf.Max(1f, enemyWeaponData.attackRange - 0.3f);
-        }
-        else
-        {
-            attackRange = 5f; 
-        }
-
-        // 🌟 核心增補：監聽遊戲管理器狀態，用於回合重置時將彈藥歸零（解耦設計）
-        if (KnockoutGameManager.Instance != null)
-        {
-            KnockoutGameManager.Instance.OnStateChanged += HandleGameStateChanged;
-        }
-
+        UpdateDynamicComfortableRange();
         FindTarget();
-    }
-
-    private void OnDestroy()
-    {
-        // 釋放事件監聽，防止記憶體殘留
-        if (KnockoutGameManager.Instance != null)
-        {
-            KnockoutGameManager.Instance.OnStateChanged -= HandleGameStateChanged;
-        }
+        currentJukeSign = Random.Range(0, 2) == 0 ? 1f : -1f;
     }
 
     private void Update()
     {
-        if (targetPlayer == null) FindTarget();
-        UpdateStrafeDirection();
+        // 🌟 總開關：如果不允許行動，就不更新任何走位計時器
+        if (!canAct) return;
 
-        // 🌟 核心增補：AI 本地自動裝彈計時器
-        HandleReloading();
+        if (targetPlayer == null) FindTarget();
+
+        jukeTimer += Time.deltaTime;
+        if (jukeTimer >= personalJukeFrequency)
+        {
+            jukeTimer = 0f;
+            currentJukeSign = Random.Range(0, 2) == 0 ? 1f : -1f; 
+            UpdateDynamicComfortableRange();
+        }
     }
 
     private void FixedUpdate()
     {
-        // 如果不是 Playing 狀態，強制暫停 AI 所有行動
-        if (KnockoutGameManager.Instance != null && 
-            KnockoutGameManager.Instance.CurrentState != KnockoutGameManager.MatchState.Playing)
+        if (rb == null) rb = GetComponent<Rigidbody>();
+        if (rb == null) return;
+
+        // 🌟 總開關：如果不允許行動、或是找不到玩家，就立刻煞車並停止運作
+        if (!canAct || targetPlayer == null) 
         {
             StopMovement();
             return;
         }
 
-        if (targetPlayer == null) 
+        float distanceToPlayer = Vector3.Distance(transform.position, targetPlayer.position);
+        Vector3 baseDirection = (targetPlayer.position - transform.position).normalized;
+        baseDirection.y = 0; 
+
+        if (baseDirection != Vector3.zero)
         {
-            StopMovement();
-            return;
+            Quaternion lookRotation = Quaternion.LookRotation(baseDirection);
+            rb.MoveRotation(Quaternion.Slerp(transform.rotation, lookRotation, Time.fixedDeltaTime * 12f));
         }
 
-        Vector3 playerPosHorizontal = new Vector3(targetPlayer.position.x, transform.position.y, targetPlayer.position.z);
-        float distanceToPlayer = Vector3.Distance(transform.position, playerPosHorizontal);
-        Vector3 direction = (playerPosHorizontal - transform.position).normalized;
-
-        Vector3 predictedShootDirection = GetPredictedShootDirection(direction);
-        if (predictedShootDirection != Vector3.zero)
+        bool shouldRetreat = false;
+        if (myHealth == null) myHealth = GetComponent<HealthSystem>();
+        
+        if (myHealth != null)
         {
-            Quaternion lookRotation = Quaternion.LookRotation(predictedShootDirection);
-            rb.MoveRotation(Quaternion.Slerp(transform.rotation, lookRotation, Time.fixedDeltaTime * 15f));
+            try 
+            {
+                if (myHealth.currentHealth < retreatHealthThreshold) shouldRetreat = true;
+            }
+            catch (System.NullReferenceException)
+            {
+                shouldRetreat = false;
+            }
         }
 
-        if (distanceToPlayer > attackRange)
+        Vector3 finalMoveVelocity = Vector3.zero;
+
+        if (shouldRetreat)
         {
-            Vector3 moveVelocity = direction * moveSpeed;
-            moveVelocity.y = rb.linearVelocity.y; 
-            rb.linearVelocity = moveVelocity;
+            Vector3 retreatDir = -baseDirection;
+            Vector3 jukeDir = Vector3.Cross(retreatDir, Vector3.up) * currentJukeSign * personalJukeIntensity * 0.5f;
+            finalMoveVelocity = (retreatDir + jukeDir).normalized * (personalMoveSpeed * 1.2f);
         }
         else
         {
-            Vector3 perpendicularDirection = new Vector3(-direction.z, 0, direction.x); 
-            Vector3 strafeVelocity = perpendicularDirection * (moveSpeed * 0.7f) * strafeFactor; 
-            
-            strafeVelocity.y = rb.linearVelocity.y; 
-            rb.linearVelocity = strafeVelocity;
+            Vector3 sideDirection = Vector3.Cross(baseDirection, Vector3.up) * currentJukeSign;
+            Vector3 jukeMovement = sideDirection * personalJukeIntensity;
 
-            if (Time.time >= nextAttackTime)
+            if (distanceToPlayer > attackRange)
             {
-                ExecuteAttack(predictedShootDirection);
+                finalMoveVelocity = (baseDirection + jukeMovement).normalized * personalMoveSpeed;
+            }
+            else if (distanceToPlayer < dynamicComfortableRange)
+            {
+                finalMoveVelocity = (-baseDirection + jukeMovement).normalized * personalMoveSpeed;
+            }
+            else
+            {
+                finalMoveVelocity = jukeMovement.normalized * (personalMoveSpeed * 0.8f);
             }
         }
+
+        if (finalMoveVelocity != Vector3.zero)
+        {
+            Vector3 randomWander = new Vector3(Random.Range(-1f, 1f), 0f, Random.Range(-1f, 1f)).normalized * 0.4f;
+            finalMoveVelocity = (finalMoveVelocity + randomWander).normalized * finalMoveVelocity.magnitude;
+
+            finalMoveVelocity.y = rb.linearVelocity.y; 
+            rb.linearVelocity = finalMoveVelocity;
+        }
+
+        float effectiveAttackRange = Mathf.Max(attackRange, dynamicComfortableRange + 1.5f);
+        if (distanceToPlayer <= effectiveAttackRange && !shouldRetreat)
+        {
+            if (Time.time >= nextAttackTime)
+            {
+                ExecuteAttack(baseDirection);
+            }
+        }
+    }
+
+    private void UpdateDynamicComfortableRange()
+    {
+        dynamicComfortableRange = comfortableRange + Random.Range(-1.5f, 1.5f);
+        dynamicComfortableRange = Mathf.Max(1.5f, dynamicComfortableRange);
     }
 
     private void StopMovement()
@@ -176,98 +198,18 @@ public class EnemyAIController : MonoBehaviour
         }
     }
 
-    private void UpdateStrafeDirection()
-    {
-        if (Time.time >= strafeDirectionTimer)
-        {
-            strafeFactor = Random.Range(0, 2) == 0 ? 1f : -1f;
-            strafeDirectionTimer = Time.time + Random.Range(1.2f, 2.5f);
-        }
-    }
-
-    private Vector3 GetPredictedShootDirection(Vector3 directToPlayer)
-    {
-        if (targetPlayer == null) return directToPlayer;
-
-        Rigidbody playerRb = targetPlayer.GetComponent<Rigidbody>();
-        if (playerRb != null && enemyWeaponData != null && enemyWeaponData.bulletSpeed > 0)
-        {
-            float distance = Vector3.Distance(transform.position, targetPlayer.position);
-            float bulletTravelTime = distance / enemyWeaponData.bulletSpeed;
-
-            Vector3 playerVelocity = playerRb.linearVelocity;
-            playerVelocity.y = 0; 
-
-            Vector3 predictedPos = targetPlayer.position + (playerVelocity * bulletTravelTime);
-            predictedPos.y = transform.position.y; 
-
-            return (predictedPos - transform.position).normalized;
-        }
-
-        return directToPlayer;
-    }
-
-    /// <summary>
-    /// AI 本地自動裝彈邏輯
-    /// </summary>
-    private void HandleReloading()
-    {
-        // 非戰鬥狀態中，不執行裝彈計時
-        if (KnockoutGameManager.Instance != null && 
-            KnockoutGameManager.Instance.CurrentState != KnockoutGameManager.MatchState.Playing)
-        {
-            return;
-        }
-
-        if (currentAmmo < maxAmmo)
-        {
-            // 🌟 資料驅動：自動讀取武器資料卡中的裝彈時間
-            float reloadTime = (enemyWeaponData != null) ? enemyWeaponData.reloadTime : defaultReloadTime;
-
-            reloadTimer += Time.deltaTime;
-            if (reloadTimer >= reloadTime)
-            {
-                currentAmmo++;
-                reloadTimer = 0f;
-            }
-        }
-        else
-        {
-            reloadTimer = 0f;
-        }
-    }
-
-    /// <summary>
-    /// 當遊戲狀態重置或進入下一局時，自動歸零彈藥（同步機制） [1]
-    /// </summary>
-    private void HandleGameStateChanged(KnockoutGameManager.MatchState newState)
-    {
-        if (newState == KnockoutGameManager.MatchState.Intro)
-        {
-            currentAmmo = 0;
-            reloadTimer = 0f;
-        }
-    }
-
     private void ExecuteAttack(Vector3 shootDirection)
     {
-        if (cachedFireLogic == null || enemyWeaponData == null) return;
+        if (attackLogicPrefab == null || firePoint == null || enemyWeaponData == null) return;
+        nextAttackTime = Time.time + attackCooldown;
 
-        // 🌟 核心修正：檢查 AI 的獨立彈藥是否足夠！
-        if (currentAmmo <= 0)
+        GameObject logicObj = Instantiate(attackLogicPrefab, firePoint.position, firePoint.rotation);
+        var fireLogic = logicObj.GetComponent<WeaponFireBase>();
+        if (fireLogic != null)
         {
-            return; // 彈藥不足，不開火，繼續走位裝彈
+            fireLogic.Fire(dummyController, firePoint.position, shootDirection, enemyWeaponData, false);
         }
 
-        // 🌟 核心修正：消耗 1 格獨立彈藥（會自動啟動 HandleReloading 裝彈計時）
-        currentAmmo--;
-
-        // 普攻連射之間的最小間隔（建議設為 0.3 ~ 0.5 秒左右，實現爆發三連發）
-        float minRequiredCooldown = 0.3f; 
-        float actualCooldown = Mathf.Max(attackCooldown, minRequiredCooldown);
-        nextAttackTime = Time.time + actualCooldown;
-
-        // 執行開火
-        cachedFireLogic.Fire(dummyController, firePoint.position, shootDirection, enemyWeaponData, false);
+        Bullet[] spawnedBullets = UnityEngine.Object.FindObjectsByType<Bullet>(FindObjectsSortMode.None);
     }
 }

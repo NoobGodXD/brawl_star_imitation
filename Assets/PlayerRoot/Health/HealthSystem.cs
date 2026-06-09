@@ -7,13 +7,12 @@ public class HealthSystem : MonoBehaviour
     [Header("血量設定")]
     public int maxHealth = 100;
 
-    // 保持為 public 供 CharacterLoader 正常讀寫，解決編譯錯誤
+    // 保持為 public 供 CharacterLoader 與 EnemyAIController 正常讀寫
     public int currentHealth;
 
     public string playerName = "Player";
     public bool IsDead { get; private set; }
 
-    // 🌟 解決 CS1061 錯誤：新增開場展示所需的資料欄位
     [Header("角色展示卡設定 (Data-Driven)")]
     [Tooltip("英雄的類別名稱（例如：雪莉、柯爾特）")]
     public string characterName = "雪莉";
@@ -28,10 +27,11 @@ public class HealthSystem : MonoBehaviour
     [Header("顏色設定")]
     public Color blueTeamColor = new Color(0.2f, 0.6f, 1f, 1f);
     public Color redTeamColor = new Color(1f, 0.2f, 0.2f, 1f);
+
     [Header("結算數據統計")]
-    public int currentKills;         // 當前累計擊殺數
-    public int currentDeaths;        // 當前累計死亡數
-    public float totalDamageDealt;   // 當前累計造成傷害量
+    public int currentKills;         
+    public int currentDeaths;        
+    public float totalDamageDealt;   
 
     private KnockoutGameManager gameManager;
 
@@ -42,7 +42,6 @@ public class HealthSystem : MonoBehaviour
 
     void Start()
     {
-        // 尋找場景中的管理器
         gameManager = FindFirstObjectByType<KnockoutGameManager>();
         ResetHealth();
     }
@@ -55,13 +54,11 @@ public class HealthSystem : MonoBehaviour
         if (targetLayer != -1) gameObject.layer = targetLayer;
     }
 
-    // 多載 1：支援舊子彈或一般扣血調用 (解決舊編譯錯誤)
     public void TakeDamage(int damage)
     {
         TakeDamage(damage, "未知的傷害來源");
     }
 
-    // 多載 2：支援新子彈調用，附帶擊殺者姓名
     public void TakeDamage(int damage, string attackerName)
     {
         if (IsDead) return;
@@ -101,11 +98,17 @@ public class HealthSystem : MonoBehaviour
             gameManager.OnPlayerDied(isBlueTeam, killerName, playerName);
         }
 
-        // 向全域 UIManager 送出通知，彈出擊殺提示
         if (KnockoutUIManager.Instance != null)
         {
             KnockoutUIManager.Instance.SpawnKillFeed(isBlueTeam, killerName, playerName);
         }
+
+        // 🌟 如果死掉的是 AI，立刻關閉大腦
+        EnemyAIController ai = GetComponent<EnemyAIController>();
+        if (ai != null) ai.canAct = false;
+
+        // 🌟 拔除陣營 Tag，防止敵方 AI 對屍體鞭屍
+        gameObject.tag = "Untagged";
 
         DisableCharacterPhysicsAndVisuals();
     }
@@ -114,18 +117,24 @@ public class HealthSystem : MonoBehaviour
     {
         currentHealth = maxHealth;
         IsDead = false;
+
+        // 🌟 重生時，重新貼回對應的陣營 Tag 供對手鎖定
+        gameObject.tag = isBlueTeam ? "BlueTeam" : "RedTeam";
+
         UpdateHealthUI();
         EnableCharacterPhysicsAndVisuals();
 
-        // 🌟 新增：回合重置時，一併將子彈清空，讓玩家在起跑點重新累積
         PlayerAttackHandler attackHandler = GetComponent<PlayerAttackHandler>();
         if (attackHandler != null)
         {
             attackHandler.ResetAmmo();
         }
+
+        // 🌟 如果是 AI 角色，重生時重新啟動大腦
+        EnemyAIController ai = GetComponent<EnemyAIController>();
+        if (ai != null) ai.canAct = true;
     }
 
-    // 雙重防禦隱藏視覺：若無 Visual 節點，直接關閉所有 Renderer 確保一定消失
     private void DisableCharacterPhysicsAndVisuals()
     {
         var collider = GetComponent<Collider>();

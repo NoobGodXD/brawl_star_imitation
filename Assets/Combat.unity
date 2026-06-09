@@ -1357,7 +1357,7 @@ Camera:
   near clip plane: 0.3
   far clip plane: 1000
   field of view: 28
-  orthographic: 1
+  orthographic: 0
   orthographic size: 5
   m_Depth: -1
   m_CullingMask:
@@ -1954,10 +1954,12 @@ MonoBehaviour:
   attackLogicPrefab: {fileID: 3832654926118288995, guid: 95a20b305708a4a1f901fba4b7cc3318, type: 3}
   firePoint: {fileID: 353348387}
   moveSpeed: 3
+  attackRange: 3
   attackCooldown: 1.5
-  maxAmmo: 3
-  currentAmmo: 0
-  defaultReloadTime: 2
+  comfortableRange: 2
+  jukeIntensity: 2
+  jukeFrequency: 0.6
+  retreatHealthThreshold: 300
 --- !u!54 &478942021
 Rigidbody:
   m_ObjectHideFlags: 0
@@ -3829,10 +3831,12 @@ MonoBehaviour:
   attackLogicPrefab: {fileID: 3832654926118288995, guid: 95a20b305708a4a1f901fba4b7cc3318, type: 3}
   firePoint: {fileID: 281717347}
   moveSpeed: 3
+  attackRange: 3
   attackCooldown: 1.5
-  maxAmmo: 3
-  currentAmmo: 0
-  defaultReloadTime: 2
+  comfortableRange: 2
+  jukeIntensity: 2
+  jukeFrequency: 0.6
+  retreatHealthThreshold: 300
 --- !u!54 &938199088
 Rigidbody:
   m_ObjectHideFlags: 0
@@ -5864,10 +5868,12 @@ MonoBehaviour:
   attackLogicPrefab: {fileID: 3832654926118288995, guid: 95a20b305708a4a1f901fba4b7cc3318, type: 3}
   firePoint: {fileID: 246465610}
   moveSpeed: 3
+  attackRange: 3
   attackCooldown: 1.5
-  maxAmmo: 3
-  currentAmmo: 0
-  defaultReloadTime: 2
+  comfortableRange: 2
+  jukeIntensity: 2
+  jukeFrequency: 0.6
+  retreatHealthThreshold: 300
 --- !u!54 &1306248804
 Rigidbody:
   m_ObjectHideFlags: 0
